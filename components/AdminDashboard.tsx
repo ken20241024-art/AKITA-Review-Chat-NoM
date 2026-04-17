@@ -9,14 +9,13 @@ interface AdminDashboardProps {
   onBack: () => void;
 }
 
-const SPREADSHEET_ID = "1KKYsoc7FfTlLAlPQKW5hY3ujaX6ErWqfcWuH9suQK20";
-const AUDIO_FOLDER_ID = "1OgMDAH6TpBU9WAJk7POfphN9FdQa8M86";
-
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSaveTask, onBack }) => {
   const [level, setLevel] = useState<PracticeLevel>(PracticeLevel.INTERMEDIATE);
   const [pdfName, setPdfName] = useState('');
   const [taskContext, setTaskContext] = useState('');
   const [gasUrl, setGasUrl] = useState('');
+  const [spreadsheetId, setSpreadsheetId] = useState('1KKYsoc7FfTlLAlPQKW5hY3ujaX6ErWqfcWuH9suQK20');
+  const [audioFolderId, setAudioFolderId] = useState('1OgMDAH6TpBU9WAJk7POfphN9FdQa8M86');
   const [activeSource, setActiveSource] = useState<'MANUAL' | 'GLOBAL_CODE' | 'ENV' | 'NONE'>('NONE');
   const [isSaving, setIsSaving] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -24,8 +23,25 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSaveTask, onBa
   useEffect(() => {
     const manualUrl = localStorage.getItem('akita_gas_url');
     setGasUrl(manualUrl || '');
+    
+    const savedSsId = localStorage.getItem('akita_spreadsheet_id');
+    if (savedSsId) setSpreadsheetId(savedSsId);
+    
+    const savedAudioId = localStorage.getItem('akita_audio_folder_id');
+    if (savedAudioId) setAudioFolderId(savedAudioId);
+    
     setActiveSource(getUrlSource());
   }, []);
+
+  const handleSsIdChange = (val: string) => {
+    setSpreadsheetId(val);
+    localStorage.setItem('akita_spreadsheet_id', val);
+  };
+
+  const handleAudioIdChange = (val: string) => {
+    setAudioFolderId(val);
+    localStorage.setItem('akita_audio_folder_id', val);
+  };
 
   const handleGasUrlChange = (val: string) => {
     const url = val.trim();
@@ -100,10 +116,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSaveTask, onBa
 
   const gasCode = `/**
  * Google Apps Script for AKITA Review Chat mkII
- * [v2.1 - Enhanced Duplicate Prevention]
+ * [v2.2 - Unified Log & ID Configuration]
  */
-const SPREADSHEET_ID = "${SPREADSHEET_ID}";
-const AUDIO_FOLDER_ID = "${AUDIO_FOLDER_ID}";
+const SPREADSHEET_ID = "${spreadsheetId}";
+const AUDIO_FOLDER_ID = "${audioFolderId}";
 
 function doGet(e) {
   try {
@@ -112,7 +128,7 @@ function doGet(e) {
       const sheet = ss.getSheetByName('Config') || ss.insertSheet('Config');
       return ContentService.createTextOutput(sheet.getRange(1, 1).getValue() || "null").setMimeType(ContentService.MimeType.JSON);
     }
-    return ContentService.createTextOutput("System Online");
+    return ContentService.createTextOutput("System Online (" + SPREADSHEET_ID + ")");
   } catch(e) {
     return ContentService.createTextOutput("Error: " + e.toString());
   }
@@ -126,20 +142,20 @@ function doPost(e) {
     const data = payload.data;
 
     if (action === 'save_session') {
-      // --- DUPLICATE CHECK START ---
+      // --- DUPLICATE CHECK ---
       const cache = CacheService.getScriptCache();
-      const lockKey = "lock_" + data.sessionId;
+      const lockKey = "lock_" + (data.sessionId || "nosession");
       if (cache.get(lockKey)) {
-        return ContentService.createTextOutput(JSON.stringify({status: 'duplicate', message: 'Already archived'})).setMimeType(ContentService.MimeType.JSON);
+        return ContentService.createTextOutput(JSON.stringify({status: 'duplicate'})).setMimeType(ContentService.MimeType.JSON);
       }
-      cache.put(lockKey, "true", 300); // 5 minute lock
-      // --- DUPLICATE CHECK END ---
+      cache.put(lockKey, "true", 300);
 
-      const today = new Date();
-      const sheetName = Utilities.formatDate(today, "GMT+9", "yyyy-MM-dd");
-      let sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
+      // --- SPREADSHEET RECORDING (Per-Day Sheet) ---
+      const today = Utilities.formatDate(new Date(), "GMT+9", "yyyy-MM-dd");
+      let sheet = ss.getSheetByName(today) || ss.insertSheet(today);
       if (sheet.getLastRow() === 0) {
-        sheet.appendRow(["Timestamp", "Email", "Mode", "Level", "CEFR", "Word Count", "Vocab Complexity", "Pronunciation", "Mistakes & Suggestions", "Advice", "Script", "Session ID"]);
+        sheet.appendRow(["Timestamp", "Email", "Mode", "Level", "CEFR", "Word Count", "Vocab", "Score", "Mistakes", "Advice", "Script", "Session ID"]);
+        sheet.getRange(1, 1, 1, 12).setFontWeight("bold").setBackground("#EFEFEF");
       }
       sheet.appendRow([
         data.timestamp, data.email, data.mode, data.level, data.cefr, 
@@ -147,14 +163,16 @@ function doPost(e) {
         data.mistakes, data.advice, data.script, data.sessionId
       ]);
 
+      // --- AUDIO STORAGE ---
       if (data.audioBase64) {
         try {
           const folder = DriveApp.getFolderById(AUDIO_FOLDER_ID);
-          const fileName = "AKITA_" + data.email.split('@')[0] + "_" + data.timestamp.replace(/[:\\/]/g, "-") + ".wav";
+          const fileName = "AKITA_" + data.email.split('@')[0] + "_" + (data.timestamp || "").replace(/[:\\/]/g, "-") + ".wav";
           folder.createFile(Utilities.newBlob(Utilities.base64Decode(data.audioBase64), 'audio/wav', fileName));
-        } catch (err) { console.log("Audio Error: " + err.toString()); }
+        } catch (err) { console.log("Audio Storage Error: " + err.toString()); }
       }
 
+      // --- EMAIL NOTIFICATION ---
       try {
         let body = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n";
         body += "   AKITA Review Chat mkII - Diagnostic Report\\n";
@@ -184,25 +202,28 @@ function doPost(e) {
         body += data.script + "\\n\\n";
         
         body += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\\n";
-        body += " Akita Provincial University - Academic Systems 2025\\n";
+        body += " Akita Provincial University - Academic Systems\\n";
         body += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
         
         MailApp.sendEmail({
           to: data.email,
-          subject: "[AKITA] Review Feedback: " + data.cefr + " Level Reached",
+          subject: "[AKITA] Review Feedback: Proficiency Analysis Complete",
           body: body
         });
-      } catch (err) { console.log("Email Error: " + err.toString()); }
+      } catch (err) { console.log("Email Delivery Error: " + err.toString()); }
 
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok'})).setMimeType(ContentService.MimeType.JSON);
     } else if (action === 'save_task') {
       const sheet = ss.getSheetByName('Config') || ss.insertSheet('Config');
       sheet.getRange(1, 1).setValue(JSON.stringify(data));
+      return ContentService.createTextOutput(JSON.stringify({status: 'ok'})).setMimeType(ContentService.MimeType.JSON);
     }
-    return ContentService.createTextOutput(JSON.stringify({status: 'ok'})).setMimeType(ContentService.MimeType.JSON);
+    return ContentService.createTextOutput(JSON.stringify({status: 'unknown'})).setMimeType(ContentService.MimeType.JSON);
   } catch (err) {
     return ContentService.createTextOutput(JSON.stringify({status: 'error', message: err.toString()})).setMimeType(ContentService.MimeType.JSON);
   }
-}`;
+}
+`;
 
   return (
     <div className="space-y-10 animate-fadeIn relative z-10">
@@ -221,7 +242,7 @@ function doPost(e) {
               <span className="w-1.5 h-6 bg-white mr-3"></span> Registry Link
             </h3>
             <div className="space-y-4">
-               <label className="text-[9px] font-bold text-white/50 uppercase tracking-widest">Active Source: {activeSource}</label>
+               <label className="text-[9px] font-bold text-white/50 uppercase tracking-widest">Active Apps Script URL</label>
                <input 
                  type="text" 
                  value={gasUrl}
@@ -229,7 +250,29 @@ function doPost(e) {
                  placeholder="Paste Web App URL here..."
                  className="w-full p-4 border border-white/10 bg-white/5 outline-none font-mono text-[10px] text-white"
                />
-               <p className="text-[8px] text-[#D4AF37] uppercase opacity-70">Note: Manual input overrides code-defined URL.</p>
+               
+               <div className="grid grid-cols-2 gap-4">
+                 <div className="space-y-1">
+                   <label className="text-[8px] font-bold text-white/40 uppercase">Spreadsheet ID</label>
+                   <input 
+                     type="text" 
+                     value={spreadsheetId}
+                     onChange={(e) => handleSsIdChange(e.target.value)}
+                     className="w-full p-3 border border-white/10 bg-white/5 outline-none font-mono text-[9px] text-white"
+                   />
+                 </div>
+                 <div className="space-y-1">
+                   <label className="text-[8px] font-bold text-white/40 uppercase">Audio Folder ID</label>
+                   <input 
+                     type="text" 
+                     value={audioFolderId}
+                     onChange={(e) => handleAudioIdChange(e.target.value)}
+                     className="w-full p-3 border border-white/10 bg-white/5 outline-none font-mono text-[9px] text-white"
+                   />
+                 </div>
+               </div>
+               
+               <p className="text-[8px] text-[#D4AF37] uppercase opacity-70">Update the IDs above before copying the script.</p>
             </div>
           </div>
 

@@ -129,16 +129,20 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
 
       const docContent = mode === AppMode.TEACHER_TASK ? teacherTask?.pdfContent : selfStudyText;
 
-      const systemInstruction = `You are a Professor at Akita Provincial University. 
-### STRICT BREVITY RULES ###
-1. SENTENCE LIMIT: EACH SENTENCE MUST BE 10 WORDS OR LESS. (STRICT MAX 10 WORDS PER SENTENCE).
-2. TURN LIMIT: YOU MUST NOT SPEAK MORE THAN 3 SENTENCES PER TURN. (MAX 3 SENTENCES).
-3. BE EXTREMELY CONCISE: No long greetings or polite fillers. Get to the point immediately.
-4. PIVOT STRATEGY: If the user asks a difficult or complex question, DO NOT PAUSE to think. Instead, immediately ask a counter-question to make the student think. Focus on the student's opinion, not your knowledge.
-5. CONTEXT: Connect your answer to: [${docContent}].
-6. SOCRATIC: End every turn with ONE very short question (less than 10 words).
-7. LANGUAGE: SPEAK ONLY ENGLISH. NO JAPANESE.
-8. TARGET: Adapt to CEFR ${level} vocabulary.`;
+      const SYSTEM_INSTRUCTION = `
+あなたは英会話インストラクターです。
+以下の【3段階の意味交渉ルール】を厳格に守って会話を進めてください。
+
+■ 3段階の意味交渉ルール
+1. 【聞き返し】ユーザーが発言したら、まずは完全に理解したフリをせず、"What do you mean by ~?" や "Could you explain that more specifically?" と聞き返し、ユーザーに説明を促してください。
+2. 【深掘り】ユーザーが説明を加えたら、さらに別の角度から質問を重ねるか、あなたの解釈が合っているか確認（"So, are you saying...?"）して、もう一段階深く話させてください。
+3. 【展開】ユーザーが2回以上詳細に説明し、十分に「交渉」が行われたと判断した場合のみ、次の質問や新しい話題に移ってください。
+
+■ 制約
+- 常に CEFR A1 レベル（超初級）の平易な英語を使用してください。
+- ユーザーが "Oh" や "I see" などの相槌だけの時は、このルールを適用せず自然に流してください。
+- トピック（PDF内容）がある場合は、その内容から逸れないようにしてください。
+- 会話の文脈（前提知識）: [${docContent}]`;
 
       const sessionPromise = ai.live.connect({
         model: 'gemini-2.5-flash-native-audio-preview-12-2025',
@@ -177,7 +181,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
             if (msg.serverContent?.inputTranscription) {
                currentStudentTurnBuffer.current += msg.serverContent.inputTranscription.text;
                if (currentAiTurnBuffer.current) {
-                 const aiLine = `PROFESSOR: ${currentAiTurnBuffer.current.trim()}`;
+                 const aiLine = `AI: ${currentAiTurnBuffer.current.trim()}`;
                  setTranscript(prev => [...prev, aiLine]);
                  transcriptRef.current.push(aiLine);
                  currentAiTurnBuffer.current = "";
@@ -186,7 +190,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
             }
             if (msg.serverContent?.turnComplete) {
                if (currentStudentTurnBuffer.current) {
-                 const line = `STUDENT: ${currentStudentTurnBuffer.current.trim()}`;
+                 const line = `STU: ${currentStudentTurnBuffer.current.trim()}`;
                  setTranscript(prev => [...prev, line]);
                  transcriptRef.current.push(line);
                  currentStudentTurnBuffer.current = "";
@@ -204,7 +208,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
         },
         config: {
           responseModalities: [Modality.AUDIO],
-          systemInstruction,
+          systemInstruction: SYSTEM_INSTRUCTION,
           speechConfig: { voiceConfig: { prebuiltVoiceConfig: { voiceName: 'Kore' } } },
           inputAudioTranscription: {},
           outputAudioTranscription: {}
@@ -317,8 +321,8 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
     
     if (micProcessorRef.current) { try { micProcessorRef.current.disconnect(); } catch(e) {} }
 
-    if (currentStudentTurnBuffer.current) { transcriptRef.current.push(`STUDENT: ${currentStudentTurnBuffer.current.trim()}`); }
-    if (currentAiTurnBuffer.current) { transcriptRef.current.push(`PROFESSOR: ${currentAiTurnBuffer.current.trim()}`); }
+    if (currentStudentTurnBuffer.current) { transcriptRef.current.push(`STU: ${currentStudentTurnBuffer.current.trim()}`); }
+    if (currentAiTurnBuffer.current) { transcriptRef.current.push(`AI: ${currentAiTurnBuffer.current.trim()}`); }
     const fullTranscript = transcriptRef.current.join('\n');
     
     let audioBase64: string | undefined = undefined;
@@ -456,7 +460,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
           </div>
           <div className="space-y-6">
           {transcript.map((line, i) => (
-            <div key={i} className={`p-4 border-l-2 ${line.startsWith('PROFESSOR') ? 'border-[#D4AF37]' : 'border-[#1B4332]'}`}>
+            <div key={i} className={`p-4 border-l-2 ${line.startsWith('AI') ? 'border-[#D4AF37]' : 'border-[#1B4332]'}`}>
               <span className="font-bold text-[9px] uppercase block mb-2 opacity-50 tracking-widest">{line.split(':')[0]}</span>
               <span className="text-[#1B4332] font-medium leading-relaxed">{line.split(':').slice(1).join(':')}</span>
             </div>
