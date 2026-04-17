@@ -62,6 +62,10 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({ level, onComplete, onCancel 
             if (msg.serverContent?.outputTranscription) {
               setAiText(prev => prev + msg.serverContent!.outputTranscription!.text);
             }
+            if (msg.serverContent?.inputTranscription) {
+              const studentText = msg.serverContent.inputTranscription.text;
+              if (studentText) transcriptRef.current.push(`STU: ${studentText}`);
+            }
             if (msg.serverContent?.turnComplete) {
               if (aiText) transcriptRef.current.push(`AI: ${aiText}`);
               setAiText('');

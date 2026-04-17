@@ -193,11 +193,11 @@ function doPost(e) {
         body += "------------------------------------------------------\\n";
         body += (data.mistakes ? data.mistakes.split('; ').join('\\n・') : "重大な間違いは見つかりませんでした。") + "\\n\\n";
         
-        body += "【教授からのアドバイス】\\n";
+        body += "【AIからのアドバイス】\\n";
         body += "------------------------------------------------------\\n";
         body += (data.advice || "継続して練習しましょう。") + "\\n\\n";
         
-        body += "【会話の記録】\\n";
+        body += "【会話の記録 (AI / STU)】\\n";
         body += "------------------------------------------------------\\n";
         body += data.script + "\\n\\n";
         
@@ -300,6 +300,21 @@ function doPost(e) {
               <button onClick={saveTask} disabled={isSaving || isExtracting} className="w-full py-5 button-deco-primary disabled:opacity-50">
                 Sync Task
               </button>
+            </div>
+            
+            <div className="p-8 corner-stepped mt-12 bg-blue-50/50 border-blue-200">
+              <h4 className="text-[10px] font-black text-blue-800 uppercase tracking-widest mb-4">Vercel 連携ガイド (Vercel Guide)</h4>
+              <div className="space-y-4 text-[10px] text-blue-700 leading-relaxed font-medium">
+                <p>
+                  Vercelでメール・シート連携を有効にするには、
+                  Vercelのプロジェクト設定で以下の変数を追加してください：
+                </p>
+                <div className="bg-white/50 p-4 space-y-1 border border-blue-100 rounded font-mono">
+                  <div>VITE_GAS_APP_URL</div>
+                  <div>VITE_SPREADSHEET_ID</div>
+                  <div>VITE_GEMINI_API_KEY</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>

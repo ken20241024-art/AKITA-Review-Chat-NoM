@@ -165,9 +165,9 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
               if (sessionClosedRef.current || !s) return;
               try {
                 if (transcriptRef.current.length === 0) {
-                  s.sendRealtimeInput({ text: "Professor here. Ready to discuss. What are your thoughts?" });
+                  s.sendRealtimeInput({ text: "AI here. Ready to discuss. What are your thoughts?" });
                 } else {
-                  s.sendRealtimeInput({ text: "I am back. Let us continue." });
+                  s.sendRealtimeInput({ text: "I am back. Let us continue the session." });
                 }
               } catch(e) {}
             });

@@ -12,42 +12,39 @@ import { SessionResult, TeacherTask } from "../types";
  * 新しく発行されたURLを使う必要があります。
  * ==========================================================
  */
-const GLOBAL_GAS_URL = "https://script.google.com/macros/s/AKfycbx2C6CNhk7bs0yczBMLQiG-FXpG-PxQMtr4ct3aIx9ywqgztGu6rPNsExxdQsHGk7Qd/exec"; 
+const GLOBAL_GAS_URL = "https://script.google.com/macros/s/AKfycbwWQuO-1OxyaGTCSJREtcPm56PTfGpkjXwYFVEq28yYlyOjgrDab-VcQf26kfqWqOTKDg/exec"; 
 
 /**
  * Retrieves the configured GAS Web App URL.
+ * Priority: 1. Manual Dashboard Override (Local Storage) -> 2. Environment Variable -> 3. Hardcoded Default
  */
 function getAppsScriptUrl(): string | null {
-  // 1. Manual override (Dashboard input)
+  // 1. Manual override (Dashboard input in Admin Registry)
   const manualUrl = localStorage.getItem('akita_gas_url');
   if (manualUrl) return manualUrl;
 
-  // 2. Environment variable (Vite format for Vercel)
+  // 2. Environment variable (VITE_ prefix for Vite/Vercel)
   const viteUrl = (import.meta as any).env?.VITE_GAS_APP_URL;
   if (viteUrl) return viteUrl;
 
-  // 3. Hardcoded global URL
+  // 3. Hardcoded global URL (Fallback)
   if (GLOBAL_GAS_URL) return GLOBAL_GAS_URL;
-
-  // 4. Legacy environment variable
-  const envUrl = process.env.GAS_APP_URL || process.env.VITE_GAS_APP_URL;
-  if (envUrl) return envUrl;
 
   return null;
 }
 
 /**
- * Centrally managed IDs that can be overridden by environment variables.
+ * Centrally managed IDs that can be overridden by environment variables or Dashboard.
  */
 export const getSpreadsheetId = () => 
   localStorage.getItem('akita_spreadsheet_id') || 
   (import.meta as any).env?.VITE_SPREADSHEET_ID || 
-  "1KKYsoc7FfTlLAlPQKW5hY3ujaX6ErWqfcWuH9suQK20";
+  "1Yv2-eJK2-B01STODsrBj8xSQDjzz7M5ia65awtOCYj8";
 
 export const getAudioFolderId = () => 
   localStorage.getItem('akita_audio_folder_id') || 
   (import.meta as any).env?.VITE_AUDIO_FOLDER_ID || 
-  "1OgMDAH6TpBU9WAJk7POfphN9FdQa8M86";
+  "17xBp_gjpL4Zns6FL1x1ba77jRanP0qMr";
 
 export function getUrlSource(): 'MANUAL' | 'GLOBAL_CODE' | 'ENV' | 'NONE' {
   if (localStorage.getItem('akita_gas_url')) return 'MANUAL';
