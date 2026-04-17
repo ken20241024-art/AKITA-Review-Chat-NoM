@@ -143,7 +143,7 @@ export const Home: React.FC<HomeProps> = ({
 
       <div className="flex justify-center items-center space-x-8 opacity-40">
         <div className="h-0.5 w-16 bg-[#1B4332]"></div>
-        <span className="text-[9px] font-bold uppercase tracking-[0.5em]">Mark II Interface Stable</span>
+        <span className="text-[9px] font-bold uppercase tracking-[0.5em]">Akita RC 弐号機</span>
         <div className="h-0.5 w-16 bg-[#1B4332]"></div>
       </div>
     </div>
