@@ -60,9 +60,9 @@ const App: React.FC = () => {
       
       setIsReadingPdf(true);
       try {
-        const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+        const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
         if (!apiKey) {
-          throw new Error("Gemini API Key is missing. Please check your environment settings.");
+          throw new Error("Gemini API Key is missing. Please check your environment settings (VITE_GEMINI_API_KEY).");
         }
 
         const ai = new GoogleGenAI({ apiKey });

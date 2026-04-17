@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { PracticeLevel, TeacherTask, SessionResult } from '../types';
-import { updateGlobalTask, getUrlSource } from '../services/integration';
+import { updateGlobalTask, getUrlSource, getSpreadsheetId, getAudioFolderId } from '../services/integration';
 import { GoogleGenAI } from "@google/genai";
 
 interface AdminDashboardProps {
@@ -14,8 +14,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSaveTask, onBa
   const [pdfName, setPdfName] = useState('');
   const [taskContext, setTaskContext] = useState('');
   const [gasUrl, setGasUrl] = useState('');
-  const [spreadsheetId, setSpreadsheetId] = useState('1KKYsoc7FfTlLAlPQKW5hY3ujaX6ErWqfcWuH9suQK20');
-  const [audioFolderId, setAudioFolderId] = useState('1OgMDAH6TpBU9WAJk7POfphN9FdQa8M86');
+  const [spreadsheetId, setSpreadsheetId] = useState(getSpreadsheetId());
+  const [audioFolderId, setAudioFolderId] = useState(getAudioFolderId());
   const [activeSource, setActiveSource] = useState<'MANUAL' | 'GLOBAL_CODE' | 'ENV' | 'NONE'>('NONE');
   const [isSaving, setIsSaving] = useState(false);
   const [isExtracting, setIsExtracting] = useState(false);
@@ -59,9 +59,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onSaveTask, onBa
     setIsExtracting(true);
 
     try {
-      const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
+      const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        throw new Error("Gemini API Key is missing. Please check your environment settings.");
+        throw new Error("Gemini API Key is missing. Please check your environment settings (VITE_GEMINI_API_KEY).");
       }
 
       const ai = new GoogleGenAI({ apiKey });

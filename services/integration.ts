@@ -22,20 +22,37 @@ function getAppsScriptUrl(): string | null {
   const manualUrl = localStorage.getItem('akita_gas_url');
   if (manualUrl) return manualUrl;
 
-  // 2. Hardcoded global URL (This is the one you updated above)
+  // 2. Environment variable (Vite format for Vercel)
+  const viteUrl = (import.meta as any).env?.VITE_GAS_APP_URL;
+  if (viteUrl) return viteUrl;
+
+  // 3. Hardcoded global URL
   if (GLOBAL_GAS_URL) return GLOBAL_GAS_URL;
 
-  // 3. Environment variable
-  const envUrl = process.env.GAS_APP_URL;
+  // 4. Legacy environment variable
+  const envUrl = process.env.GAS_APP_URL || process.env.VITE_GAS_APP_URL;
   if (envUrl) return envUrl;
 
   return null;
 }
 
+/**
+ * Centrally managed IDs that can be overridden by environment variables.
+ */
+export const getSpreadsheetId = () => 
+  localStorage.getItem('akita_spreadsheet_id') || 
+  (import.meta as any).env?.VITE_SPREADSHEET_ID || 
+  "1KKYsoc7FfTlLAlPQKW5hY3ujaX6ErWqfcWuH9suQK20";
+
+export const getAudioFolderId = () => 
+  localStorage.getItem('akita_audio_folder_id') || 
+  (import.meta as any).env?.VITE_AUDIO_FOLDER_ID || 
+  "1OgMDAH6TpBU9WAJk7POfphN9FdQa8M86";
+
 export function getUrlSource(): 'MANUAL' | 'GLOBAL_CODE' | 'ENV' | 'NONE' {
   if (localStorage.getItem('akita_gas_url')) return 'MANUAL';
+  if ((import.meta as any).env?.VITE_GAS_APP_URL || process.env.GAS_APP_URL) return 'ENV';
   if (GLOBAL_GAS_URL) return 'GLOBAL_CODE';
-  if (process.env.GAS_APP_URL) return 'ENV';
   return 'NONE';
 }
 

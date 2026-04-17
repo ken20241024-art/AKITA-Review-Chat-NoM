@@ -114,7 +114,11 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
     sessionClosedRef.current = false;
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY! });
+      const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY || process.env.API_KEY || process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        throw new Error("Gemini API Key is missing. Please check your environment settings (VITE_GEMINI_API_KEY).");
+      }
+      const ai = new GoogleGenAI({ apiKey });
       
       if (!audioContextsRef.current) {
         const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
@@ -438,7 +442,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
           <div className="bg-white/90 p-12 border-2 border-[#D4AF37] border-double text-left max-w-3xl mx-auto shadow-xl">
              <span className="text-[9px] font-bold text-[#D4AF37] uppercase tracking-widest block mb-4">Transcription Feed</span>
              <p className="text-2xl font-bold leading-relaxed text-[#1B4332] title-serif italic min-h-[120px]">
-               {currentAiText || (isStoppingRef.current ? "Please wait..." : `Awaiting Professor's prompt...`)}
+               {currentAiText || (isStoppingRef.current ? "Please wait..." : `Awaiting AI...`)}
              </p>
           </div>
         </div>
