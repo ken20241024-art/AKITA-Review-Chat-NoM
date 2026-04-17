@@ -56,7 +56,7 @@ export const Layout: React.FC<LayoutProps> = ({ children, isAdmin, onToggleAdmin
               <h1 className="text-2xl md:text-3xl font-bold uppercase title-serif tracking-widest leading-none text-white">
                 AKITA REVIEW CHAT NoM
               </h1>
-              <p className="text-[10px] tracking-[0.6em] uppercase font-bold text-[#C0C0C0] mt-2">MK II</p>
+              <p className="text-[10px] tracking-[0.6em] uppercase font-bold text-[#C0C0C0] mt-2">Negotiation of Meaning</p>
             </div>
           </div>
           
